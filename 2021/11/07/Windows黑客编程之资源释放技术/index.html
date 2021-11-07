@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" integrity="sha256-mUZM63G8m73Mcidfrv5E+Y61y7a12O5mW4ezU3bxqW4=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"lxflxfcl.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<meta name="description" content="前言今天说一下写病毒木马会广泛使用的一种技术——资源释放技术。为什么我们在写木马时会使用到资源释放技术呢？这是因为它可以使我们写的程序变得简洁。如果程序需要额外加载一些DLL文件或者文本文件，我们可以把它们作为资源插入到程序里。等程序运行，再把它们释放到本地。这样好处是只有一个.exe文件，这就降低了被发现的风险。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows黑客编程之资源释放技术.md">
+<meta property="og:url" content="https://lxflxfcl.github.io/2021/11/07/Windows%E9%BB%91%E5%AE%A2%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%B5%84%E6%BA%90%E9%87%8A%E6%94%BE%E6%8A%80%E6%9C%AF/index.html">
+<meta property="og:site_name" content="小艾搞安全">
+<meta property="og:description" content="前言今天说一下写病毒木马会广泛使用的一种技术——资源释放技术。为什么我们在写木马时会使用到资源释放技术呢？这是因为它可以使我们写的程序变得简洁。如果程序需要额外加载一些DLL文件或者文本文件，我们可以把它们作为资源插入到程序里。等程序运行，再把它们释放到本地。这样好处是只有一个.exe文件，这就降低了被发现的风险。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/537f790f9d77f1774877844ee84e1fe7.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/2c898beb38bd446593f3da24f54bf24b.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/39e0a8452ae187f3c0ae43051ed357be.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/2283190545d37da9ea4ed25bc4747084.png">
+<meta property="article:published_time" content="2021-11-07T12:05:36.000Z">
+<meta property="article:modified_time" content="2021-11-07T12:12:01.031Z">
+<meta property="article:author" content="小艾">
+<meta property="article:tag" content="病毒木马">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/537f790f9d77f1774877844ee84e1fe7.png">
+
+
+<link rel="canonical" href="https://lxflxfcl.github.io/2021/11/07/Windows%E9%BB%91%E5%AE%A2%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%B5%84%E6%BA%90%E9%87%8A%E6%94%BE%E6%8A%80%E6%9C%AF/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://lxflxfcl.github.io/2021/11/07/Windows%E9%BB%91%E5%AE%A2%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%B5%84%E6%BA%90%E9%87%8A%E6%94%BE%E6%8A%80%E6%9C%AF/","path":"2021/11/07/Windows黑客编程之资源释放技术/","title":"Windows黑客编程之资源释放技术.md"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Windows黑客编程之资源释放技术.md | 小艾搞安全</title>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="小艾搞安全" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+  <a target="_blank" rel="noopener" href="https://github.com/lxflxfcl" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">小艾搞安全</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">一直学习，一直分享。</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B5%84%E6%BA%90%E6%8F%92%E5%85%A5"><span class="nav-number">2.</span> <span class="nav-text">资源插入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8A%E6%94%BE%E8%B5%84%E6%BA%90"><span class="nav-number">3.</span> <span class="nav-text">释放资源</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B%E6%BC%94%E7%A4%BA"><span class="nav-number">4.</span> <span class="nav-text">案例演示</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">小艾</p>
+  <div class="site-description" itemprop="description">微信公众号：小艾搞安全</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://lxflxfcl.github.io/2021/11/07/Windows%E9%BB%91%E5%AE%A2%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%B5%84%E6%BA%90%E9%87%8A%E6%94%BE%E6%8A%80%E6%9C%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="小艾">
+      <meta itemprop="description" content="微信公众号：小艾搞安全">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小艾搞安全">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Windows黑客编程之资源释放技术.md
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2021-11-07 20:05:36 / 修改时间：20:12:01" itemprop="dateCreated datePublished" datetime="2021-11-07T20:05:36+08:00">2021-11-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Windows%E9%BB%91%E5%AE%A2%E7%BC%96%E7%A8%8B/" itemprop="url" rel="index"><span itemprop="name">Windows黑客编程</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>今天说一下写病毒木马会广泛使用的一种技术——资源释放技术。为什么我们在写木马时会使用到资源释放技术呢？这是因为它可以使我们写的程序变得简洁。如果程序需要额外加载一些DLL文件或者文本文件，我们可以把它们作为资源插入到程序里。等程序运行，再把它们释放到本地。这样好处是只有一个.exe文件，这就降低了被发现的风险。</p>
+<span id="more"></span>
+
+<p>参考资料《Windows黑客编程》</p>
+<h3 id="资源插入"><a href="#资源插入" class="headerlink" title="资源插入"></a>资源插入</h3><p>说资源释放前，下面先说一下资源插入，资源插入不需要编写代码，只需要手动设置VS开发环境就可以。首先新建一个文件，这里命名为lxf ,然后在里面写上内容，内容为my name is lxf，如下图：</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/537f790f9d77f1774877844ee84e1fe7.png" alt="image-20211106212130307"></p>
+<p>然后在VS2017中新建一个项目，在项目的解决方案里右键=》添加=》资源，如下图</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/2c898beb38bd446593f3da24f54bf24b.png" alt="image-20211106212844487"></p>
+<p>点击资源后，然后再新弹出来的对话框，点击自定义，然后在资源类型框里填MYRES，最后点击导入，将刚才新建的文件导入到这里。如下图：</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/39e0a8452ae187f3c0ae43051ed357be.png" alt="image-20211106213401609"></p>
+<p>倒入成功后，插入资源就完成了。</p>
+<h3 id="释放资源"><a href="#释放资源" class="headerlink" title="释放资源"></a>释放资源</h3><p>接下来看一下释放资源的案例代码，如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// test.cpp : 此文件包含 &quot;main&quot; 函数。程序执行将在此处开始并结束。</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">undef</span> UNICODE</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;Windows.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;resource.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 提取资源</span></span><br><span class="line"><span class="function">BOOL <span class="title">FreeMyResourse</span><span class="params">(UINT uiResouceName, <span class="keyword">char</span> *lpszResourceType, <span class="keyword">char</span> *lpszSaveFileName)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//获取指定模块的资源</span></span><br><span class="line">	HRSRC hRsrc = <span class="built_in">FindResource</span>(<span class="literal">NULL</span>, <span class="built_in">MAKEINTRESOURCE</span>(uiResouceName), lpszResourceType);</span><br><span class="line">	<span class="keyword">if</span> (hRsrc == <span class="literal">NULL</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;can&#x27;t find the resource!\n&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span> FALSE;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//获取资源的大小</span></span><br><span class="line">	DWORD dwSize = <span class="built_in">SizeofResource</span>(<span class="literal">NULL</span>, hRsrc);</span><br><span class="line">	<span class="keyword">if</span> (dwSize &lt;= <span class="number">0</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;the resource&#x27;s size is error!\n&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span> FALSE;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//将资源加载到内存里</span></span><br><span class="line">	HGLOBAL hGlobal = <span class="built_in">LoadResource</span>(<span class="literal">NULL</span>, hRsrc);</span><br><span class="line">	<span class="keyword">if</span>(hGlobal == <span class="literal">NULL</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;load resource error!\n&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span> FALSE;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//锁定资源</span></span><br><span class="line">	LPVOID lpVoid = <span class="built_in">LockResource</span>(hGlobal);</span><br><span class="line">	<span class="keyword">if</span> (lpVoid == <span class="literal">NULL</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;lock resource error!\n&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span> FALSE;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//保存资源为文件</span></span><br><span class="line">	FILE* fp = <span class="literal">NULL</span>;</span><br><span class="line">	<span class="built_in">fopen_s</span>(&amp;fp, lpszSaveFileName, <span class="string">&quot;wb+&quot;</span>);</span><br><span class="line">	<span class="keyword">if</span> (fp == <span class="literal">NULL</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;open file error!\n&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span> FALSE;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">fwrite</span>(lpVoid, <span class="built_in"><span class="keyword">sizeof</span></span>(<span class="keyword">char</span>), dwSize, fp);</span><br><span class="line">	<span class="built_in">fclose</span>(fp);</span><br><span class="line">	<span class="keyword">return</span> TRUE;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">char</span> lpszResourceType[<span class="number">20</span>] = <span class="string">&quot;MYRES&quot;</span>;</span><br><span class="line">	<span class="keyword">char</span> szSaveFileName[<span class="number">20</span>] = <span class="string">&quot;lxf.txt&quot;</span>;</span><br><span class="line">	BOOL flag = <span class="built_in">FreeMyResourse</span>(IDR_MYRES4,lpszResourceType, szSaveFileName);</span><br><span class="line">	<span class="keyword">if</span> (flag == TRUE)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;释放成功\n&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面写了释放资源的案例代码，这里讲解一下吧，<strong>首先是FindResource函数</strong>，<strong>这个函数的作用就是确定模块中指定类型和名称的资源所在位置</strong>。</p>
+<p>函数原型：</p>
+<p>HRSRC FindResource（HMODULE hModule，LPCTSTR lpName，LPCTSTR lpType)</p>
+<p>参数：</p>
+<ul>
+<li>  hModule：处理包含资源的可执行文件的模块。NULL值则指定模块句柄指向操作系统通常情况下创建最近过程的相关位图文件。</li>
+<li>  lpName：指定资源名称。</li>
+<li>  lpType：指定资源类型。</li>
+</ul>
+<p>返回值：</p>
+<p>如果函数成功运行，那么返回值为指定资源信息块的句柄。可将句柄传递给LoadResource函数来获得这些资源。如果失败，返回NULL。</p>
+<p><strong>接下来是SizeofResource函数</strong>。<strong>这个函数的作用是获取指定资源的字节数。</strong></p>
+<p>函数原型：</p>
+<p>DWORD SizeofResource(HMODULE hModule，HRSRC hReslnfo);</p>
+<p>参数：</p>
+<ul>
+<li>hModule：包合资源的可执行文件模块的句柄。</li>
+<li>hReslnfo：资源句柄。此句柄必须由函数FindResource或FindResourceEx来创建。</li>
+</ul>
+<p>返回值：</p>
+<p>如果函数运行成功，返回值资源的字节数。如果函数运行失败，返回值为零。若想获得更多的错误信息，请调用GetLastError函数。</p>
+<p><strong>接着是LoadResource函数</strong>。<strong>这个函数的作用是装载指定资源到全局存储器。</strong></p>
+<p>函数原型:</p>
+<p> HGLOBAL LoadResource(HMODULE hModule，HRSRC hReslnfo);</p>
+<p>参数：</p>
+<ul>
+<li>hModule：处理包合资源的可执行文件的模块句柄。若hModule为NULL，系统从当前过程中的模块中装载资源。</li>
+<li>hReslnfo：将被装载资源的句柄。它必须由函数FindResource或FindResourceEx创建。</li>
+</ul>
+<p>返回值：如果函数运行成功，返回值是相关资源的数据的句柄。如果函数运行失败，返回值为NULL。若想获得更多的错误信息，请调用GetLastError函数。</p>
+<p><strong>最后一个是LockResource函数，这个函数作用是锁定资源，并得到资源在内存中第一个字节的指针。</strong></p>
+<p>函数原型:</p>
+<p>LPVOID LockResource(HGLOBAL hResDate);</p>
+<p>参数:</p>
+<ul>
+<li>hResDate：被装载的资源的句柄。函数LosdResource可以返回这个句柄。</li>
+</ul>
+<p>返回值：</p>
+<p>如果被装载的资源被所住了，返回值是资源第一个字节的指针；否则为NULL。</p>
+<p><strong>注意：通过使用函数FindResource或FindResourceEx返回句柄试图所住资源，不再工作。可以返回一个错误的数据和任意数据的指针。</strong></p>
+<p>当使用完资源后，必须通过调用函数以释放加速器表、位图、光标、目标以及某单所占的内存资源：加速器表：DestroyAcceleratorTable；位图：DeleteObject；光标：DestroyCursor；图标：Destroylcon；菜单：DestroyMenu。</p>
+<p>当过程创建终止时，系统将自动删除这些资源。但是调用相关函数也可以保留内存减少过程的工作设置所占空间。</p>
+<p>相关函数说完了，最后再理一下代码流程。</p>
+<ol>
+<li>首先通过FindResource函数定位程序里的资源，主要根据资源类型，和资源名称定位，获得资源消息块的句柄。</li>
+<li>然后根据获得的句柄，再通过SizeofResource函数获取资源的大小。</li>
+<li>然后通过LoadResource函数把资源加载到程序内存中。</li>
+<li>再然后通过LockResource函数锁定加载到内存中的资源，防止程序中的其他操作影响这块内存。返回值就是资源在进程内存中的起始地址。</li>
+<li>最后资源大小以及进程内存的起始地址，可以将资源数据读出并保存为本地文件。</li>
+</ol>
+<p>还有最后一点需要注意，在main()函数里的第一行和第三行需要根据自己的实际情况进行修改。</p>
+<h3 id="案例演示"><a href="#案例演示" class="headerlink" title="案例演示"></a>案例演示</h3><p>创建新项目，写入上述代码，然后运行程序，查看窗口，和项目目录，发现运行成功，资源释放成功。</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/2283190545d37da9ea4ed25bc4747084.png" alt="image-20211107200132012"></p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>关于资源释放就说到这里，如有错误请斧正。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+<div class="wechat_OA">
+	<span>欢迎关注我的公众号</span>
+	<br>
+    <!-- 这里添加你的二维码图片 -->
+	<img src ="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/10/b96183f757001d225f8ec44f8e9e9df2.jpg">
+</div>
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>小艾
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://lxflxfcl.github.io/2021/11/07/Windows%E9%BB%91%E5%AE%A2%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%B5%84%E6%BA%90%E9%87%8A%E6%94%BE%E6%8A%80%E6%9C%AF/" title="Windows黑客编程之资源释放技术.md">https://lxflxfcl.github.io/2021/11/07/Windows黑客编程之资源释放技术/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E7%97%85%E6%AF%92%E6%9C%A8%E9%A9%AC/" rel="tag"># 病毒木马</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/10/05/%E5%8D%9A%E5%AE%A2%E5%9B%AD%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="prev" title="博客园漏洞挖掘">
+                  <i class="fa fa-chevron-left"></i> 博客园漏洞挖掘
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">true</span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+    <div class="theme-info">
+      <div class="powered-by"></div>
+      <span class="post-count">博客全站共4.6k字</span>
+    </div>
+
+
+    </div>
+  </footer>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="https://cdn.jsdelivr.net/npm/ribbon.js@1.0.2/dist/ribbon.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+</body>
+</html>
