@@ -20,37 +20,38 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"lxflxfcl.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
-<meta name="description" content="前言闲来无事，想着在博客园中写一篇有关XSS的文章，结果有了意外收获。发现博客园在渲染的时候没有转译尖括号，也就有了今天这篇文章。">
+<meta name="description" content="前言这是一个风和日丽的下午，想着从网上找一套表白网的源码自己进行修改然后讨女友欢心。当我正在GitHub进行搜索翻阅时，一个表白墙的源码映入眼中。我好奇的点开演示网站，故事开始了。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="博客园漏洞挖掘">
-<meta property="og:url" content="https://lxflxfcl.github.io/2021/10/05/%E5%8D%9A%E5%AE%A2%E5%9B%AD%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/index.html">
+<meta property="og:title" content="实战｜一个表白墙引发的“血案”">
+<meta property="og:url" content="https://lxflxfcl.github.io/2021/11/11/%E5%AE%9E%E6%88%98%EF%BD%9C%E4%B8%80%E4%B8%AA%E8%A1%A8%E7%99%BD%E5%A2%99%E5%BC%95%E5%8F%91%E7%9A%84%E2%80%9C%E8%A1%80%E6%A1%88%E2%80%9D/index.html">
 <meta property="og:site_name" content="小艾搞安全">
-<meta property="og:description" content="前言闲来无事，想着在博客园中写一篇有关XSS的文章，结果有了意外收获。发现博客园在渲染的时候没有转译尖括号，也就有了今天这篇文章。">
+<meta property="og:description" content="前言这是一个风和日丽的下午，想着从网上找一套表白网的源码自己进行修改然后讨女友欢心。当我正在GitHub进行搜索翻阅时，一个表白墙的源码映入眼中。我好奇的点开演示网站，故事开始了。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/07feb116d0370d8b674be73e6b36bcb9.png">
-<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/e55591b4c3034d084515a4ed41373938.png">
-<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/adb4d276a56b0a0d2a6a9223b8e1981a.png">
-<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/709d4b52f296eca4dbe9f7e4539e1b3c.png">
-<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/6aad6e17538ad63805dc4c24813b0616.png">
-<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/c3af2cd89a0d0773da688e1f2f9b2500.png">
-<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/029494858a5382951c9db819e6deff8e.png">
-<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/aab7286a447525523acf7819f4631513.png">
-<meta property="article:published_time" content="2021-10-05T12:53:32.000Z">
-<meta property="article:modified_time" content="2021-10-07T03:44:28.604Z">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/f5c4c08b33e4722b8e7ba73428f559b5.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/1604f654be657c015bf4085d3f8d7a2b.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/9c27664132364c33b037c7aae1101512.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/a021a7bb169ca30cae870898d2697d00.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/f934beb6df7b75302bd145416e7c2b23.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/4230b1f06f143cf7be26361a4b96e83b.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/7828c29729633f968ecb18cd49ad3adc.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/51481a20580f2ccc069b252bfd2ec6c3.png">
+<meta property="og:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/19007a4c50825a1ad58e74db1457c1ef.png">
+<meta property="article:published_time" content="2021-11-11T12:22:51.000Z">
+<meta property="article:modified_time" content="2021-11-11T12:26:55.234Z">
 <meta property="article:author" content="小艾">
 <meta property="article:tag" content="渗透测试">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/07feb116d0370d8b674be73e6b36bcb9.png">
+<meta name="twitter:image" content="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/f5c4c08b33e4722b8e7ba73428f559b5.png">
 
 
-<link rel="canonical" href="https://lxflxfcl.github.io/2021/10/05/%E5%8D%9A%E5%AE%A2%E5%9B%AD%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/">
+<link rel="canonical" href="https://lxflxfcl.github.io/2021/11/11/%E5%AE%9E%E6%88%98%EF%BD%9C%E4%B8%80%E4%B8%AA%E8%A1%A8%E7%99%BD%E5%A2%99%E5%BC%95%E5%8F%91%E7%9A%84%E2%80%9C%E8%A1%80%E6%A1%88%E2%80%9D/">
 
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://lxflxfcl.github.io/2021/10/05/%E5%8D%9A%E5%AE%A2%E5%9B%AD%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/","path":"2021/10/05/博客园漏洞挖掘/","title":"博客园漏洞挖掘"}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://lxflxfcl.github.io/2021/11/11/%E5%AE%9E%E6%88%98%EF%BD%9C%E4%B8%80%E4%B8%AA%E8%A1%A8%E7%99%BD%E5%A2%99%E5%BC%95%E5%8F%91%E7%9A%84%E2%80%9C%E8%A1%80%E6%A1%88%E2%80%9D/","path":"2021/11/11/实战｜一个表白墙引发的“血案”/","title":"实战｜一个表白墙引发的“血案”"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>博客园漏洞挖掘 | 小艾搞安全</title>
+<title>实战｜一个表白墙引发的“血案” | 小艾搞安全</title>
   
 
 
@@ -130,7 +131,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E5%8F%91%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">漏洞发现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">3.</span> <span class="nav-text">结语</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E2%80%9C%E8%A1%80%E6%A1%88%E2%80%9D%E7%9A%84%E5%BC%95%E5%8F%91"><span class="nav-number">2.</span> <span class="nav-text">“血案”的引发</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -193,7 +194,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://lxflxfcl.github.io/2021/10/05/%E5%8D%9A%E5%AE%A2%E5%9B%AD%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/">
+    <link itemprop="mainEntityOfPage" href="https://lxflxfcl.github.io/2021/11/11/%E5%AE%9E%E6%88%98%EF%BD%9C%E4%B8%80%E4%B8%AA%E8%A1%A8%E7%99%BD%E5%A2%99%E5%BC%95%E5%8F%91%E7%9A%84%E2%80%9C%E8%A1%80%E6%A1%88%E2%80%9D/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -206,7 +207,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          博客园漏洞挖掘
+          实战｜一个表白墙引发的“血案”
         </h1>
 
         <div class="post-meta-container">
@@ -216,16 +217,10 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
+      
 
-      <time title="创建时间：2021-10-05 20:53:32" itemprop="dateCreated datePublished" datetime="2021-10-05T20:53:32+08:00">2021-10-05</time>
+      <time title="创建时间：2021-11-11 20:22:51 / 修改时间：20:26:55" itemprop="dateCreated datePublished" datetime="2021-11-11T20:22:51+08:00">2021-11-11</time>
     </span>
-      <span class="post-meta-item">
-        <span class="post-meta-item-icon">
-          <i class="far fa-calendar-check"></i>
-        </span>
-        <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-10-07 11:44:28" itemprop="dateModified" datetime="2021-10-07T11:44:28+08:00">2021-10-07</time>
-      </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
         <i class="far fa-folder"></i>
@@ -253,27 +248,30 @@
     
     
     <div class="post-body" itemprop="articleBody">
-        <h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>闲来无事，想着在博客园中写一篇有关XSS的文章，结果有了意外收获。发现博客园在渲染的时候没有转译尖括号，也就有了今天这篇文章。</p>
+        <h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>这是一个风和日丽的下午，想着从网上找一套表白网的源码自己进行修改然后讨女友欢心。当我正在GitHub进行搜索翻阅时，一个表白墙的源码映入眼中。我好奇的点开演示网站，故事开始了。</p>
 <span id="more"></span>
 
-<h4 id="漏洞发现"><a href="#漏洞发现" class="headerlink" title="漏洞发现"></a>漏洞发现</h4><p>在写博客的时候，使用渲染功能时，发现博客园并没有转译尖括号，这让我有了想法，感觉博客园这里有搞头，可能存在XSS，于是，开始了测试，使用如下payload：</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;img src=<span class="number">1</span> onerror=alert(<span class="number">1</span>)&gt;</span><br></pre></td></tr></table></figure>
-
-<p>结果如下图，果然解析了。</p>
-<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/07feb116d0370d8b674be73e6b36bcb9.png"></p>
-<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/e55591b4c3034d084515a4ed41373938.png" alt="image-20210917195229363"></p>
-<p>现在完成了第一步，但是预览这里的XSS只能自己插自己，没什么用，尝试着将文章发布，看看能不能打到其他人，发现发送的时候，存在过滤，删掉了onerror，猜测是黑名单过滤。存在绕过的可能。</p>
-<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/adb4d276a56b0a0d2a6a9223b8e1981a.png" alt="image-20210917195342043"></p>
-<p>经过多次尝试，使用如下payload</p>
-<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/709d4b52f296eca4dbe9f7e4539e1b3c.png" alt="image-20210917195551472"></p>
-<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/6aad6e17538ad63805dc4c24813b0616.png" alt="image-20210917195611835"></p>
-<p>成功绕过过滤，可以攻击其他人了。</p>
-<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/c3af2cd89a0d0773da688e1f2f9b2500.png" alt="image-20210917195641765"></p>
-<p>我将payload插入到之前发布的博客文章中，成功触发payload。</p>
-<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/029494858a5382951c9db819e6deff8e.png" alt="image-20210919125650081"></p>
-<p>证明不是self XSS</p>
-<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/09/aab7286a447525523acf7819f4631513.png" alt="image-20210919125743646"></p>
-<h4 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h4><p>本文涉及到的漏洞已经报送给相关厂商，厂商已修复漏洞。本文涉及的技术细节仅用于学习交流，请勿用于其他用途。</p>
+<h4 id="“血案”的引发"><a href="#“血案”的引发" class="headerlink" title="“血案”的引发"></a>“血案”的引发</h4><p>当我点击进入演示网站查看时，发现界面比较简洁。莫名的手痒了起来，想尝试搞一番。界面如下：</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/f5c4c08b33e4722b8e7ba73428f559b5.png" alt="image-20211111193112079"></p>
+<p>同时，我们观察界面也会发现，这个演示网站其实是跑在他的博客上的，也就是说，如果这个演示页面有问题，那么它的博客也会沦陷。然后接着观察。</p>
+<p>顺便添加了一个表白墙，看看功能，添加好以后，显示界面如下：</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/1604f654be657c015bf4085d3f8d7a2b.png" alt="image-20211111193728790"></p>
+<p>当我看到有参数可以传参时，因为有良好的职业素养，顺手一个单引号，看看效果。然后就看到了mysql的错误回显，当时我是非常震惊的。好嘛，这洞说来就来？</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/9c27664132364c33b037c7aae1101512.png" alt="image-20211111194114897"></p>
+<p>这还废啥话，直接祭出sqlmap一把嗦。结果如下，不止存在报错注入，还存在时间和布尔盲注，如下图：</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/a021a7bb169ca30cae870898d2697d00.png" alt="image-20211111194544903"></p>
+<p>还记得文章前面说的吗？这个演示站是搭建在作者自己的博客上的，这里存在sql注入，是可以把他博客打下来的。话不多说，开整。继续使用sqlmap得知，数据库中有一个库，库中存在多张表。如下图：</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/f934beb6df7b75302bd145416e7c2b23.png" alt="image-20211111195322502"></p>
+<p>根据表我们可以知道我们猜的没有错，博客确实和演示站用的同一个库。接下来就是找账号密码了。我们发现在表中是存在wp_users表的，我们想要的数据肯定也是在这张表中。我们猜的不错，确实存在。结果如下图：</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/4230b1f06f143cf7be26361a4b96e83b.png" alt="image-20211111201926680"></p>
+<p>一共两个账户，但是第二个账号的密码没有解密出来，但是我们得到了第一个账户的密码。接下来就是找后台了。其实我们通过表名前缀就可以知道这个开源博客程序WordPress。如果不清楚，我们可以借助指纹识别插件来进行识别。如下图：</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/7828c29729633f968ecb18cd49ad3adc.png" alt="image-20211111200334662"></p>
+<p>同样可以识别出来，既然已经知道了是WordPress，那么后台也就很好找了，WordPress的默认后台路径为wp-login.php，我们可以尝试一下。很幸运，作者并没有改后台路径，如下图：</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/51481a20580f2ccc069b252bfd2ec6c3.png" alt="image-20211111200656776"></p>
+<p>通过我们刚才获取到的账号密码，成功登陆后台。</p>
+<p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/19007a4c50825a1ad58e74db1457c1ef.png" alt="image-20211111200845443"></p>
+<p>故事到这里就结束了。</p>
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p>在这里再次嘱咐大家，在实际环境中开发者要秉持“外部参数皆不可信原则”进行开发。</p>
 
     </div>
 
@@ -296,7 +294,7 @@
   </li>
   <li class="post-copyright-link">
       <strong>本文链接：</strong>
-      <a href="https://lxflxfcl.github.io/2021/10/05/%E5%8D%9A%E5%AE%A2%E5%9B%AD%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" title="博客园漏洞挖掘">https://lxflxfcl.github.io/2021/10/05/博客园漏洞挖掘/</a>
+      <a href="https://lxflxfcl.github.io/2021/11/11/%E5%AE%9E%E6%88%98%EF%BD%9C%E4%B8%80%E4%B8%AA%E8%A1%A8%E7%99%BD%E5%A2%99%E5%BC%95%E5%8F%91%E7%9A%84%E2%80%9C%E8%A1%80%E6%A1%88%E2%80%9D/" title="实战｜一个表白墙引发的“血案”">https://lxflxfcl.github.io/2021/11/11/实战｜一个表白墙引发的“血案”/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -312,14 +310,11 @@
 
           <div class="post-nav">
             <div class="post-nav-item">
-                <a href="/2021/10/05/%E7%94%A8python%E5%86%99%E4%B8%80%E4%B8%AA%E8%87%AA%E5%8A%A8%E5%8C%96%E7%9B%B2%E6%B3%A8%E8%84%9A%E6%9C%AC/" rel="prev" title="用python写一个自动化盲注脚本">
-                  <i class="fa fa-chevron-left"></i> 用python写一个自动化盲注脚本
+                <a href="/2021/11/07/Windows%E9%BB%91%E5%AE%A2%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%B5%84%E6%BA%90%E9%87%8A%E6%94%BE%E6%8A%80%E6%9C%AF/" rel="prev" title="Windows黑客编程之资源释放技术.md">
+                  <i class="fa fa-chevron-left"></i> Windows黑客编程之资源释放技术.md
                 </a>
             </div>
             <div class="post-nav-item">
-                <a href="/2021/11/07/Windows%E9%BB%91%E5%AE%A2%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%B5%84%E6%BA%90%E9%87%8A%E6%94%BE%E6%8A%80%E6%9C%AF/" rel="next" title="Windows黑客编程之资源释放技术.md">
-                  Windows黑客编程之资源释放技术.md <i class="fa fa-chevron-right"></i>
-                </a>
             </div>
           </div>
     </footer>

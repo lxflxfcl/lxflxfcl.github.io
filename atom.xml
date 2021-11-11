@@ -6,7 +6,7 @@
   <link href="https://lxflxfcl.github.io/atom.xml" rel="self"/>
   
   <link href="https://lxflxfcl.github.io/"/>
-  <updated>2021-11-07T12:12:01.031Z</updated>
+  <updated>2021-11-11T12:26:55.234Z</updated>
   <id>https://lxflxfcl.github.io/</id>
   
   <author>
@@ -15,6 +15,27 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>实战｜一个表白墙引发的“血案”</title>
+    <link href="https://lxflxfcl.github.io/2021/11/11/%E5%AE%9E%E6%88%98%EF%BD%9C%E4%B8%80%E4%B8%AA%E8%A1%A8%E7%99%BD%E5%A2%99%E5%BC%95%E5%8F%91%E7%9A%84%E2%80%9C%E8%A1%80%E6%A1%88%E2%80%9D/"/>
+    <id>https://lxflxfcl.github.io/2021/11/11/%E5%AE%9E%E6%88%98%EF%BD%9C%E4%B8%80%E4%B8%AA%E8%A1%A8%E7%99%BD%E5%A2%99%E5%BC%95%E5%8F%91%E7%9A%84%E2%80%9C%E8%A1%80%E6%A1%88%E2%80%9D/</id>
+    <published>2021-11-11T12:22:51.000Z</published>
+    <updated>2021-11-11T12:26:55.234Z</updated>
+    
+    <content type="html"><![CDATA[<h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>这是一个风和日丽的下午，想着从网上找一套表白网的源码自己进行修改然后讨女友欢心。当我正在GitHub进行搜索翻阅时，一个表白墙的源码映入眼中。我好奇的点开演示网站，故事开始了。</p><span id="more"></span><h4 id="“血案”的引发"><a href="#“血案”的引发" class="headerlink" title="“血案”的引发"></a>“血案”的引发</h4><p>当我点击进入演示网站查看时，发现界面比较简洁。莫名的手痒了起来，想尝试搞一番。界面如下：</p><p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/f5c4c08b33e4722b8e7ba73428f559b5.png" alt="image-20211111193112079"></p><p>同时，我们观察界面也会发现，这个演示网站其实是跑在他的博客上的，也就是说，如果这个演示页面有问题，那么它的博客也会沦陷。然后接着观察。</p><p>顺便添加了一个表白墙，看看功能，添加好以后，显示界面如下：</p><p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/1604f654be657c015bf4085d3f8d7a2b.png" alt="image-20211111193728790"></p><p>当我看到有参数可以传参时，因为有良好的职业素养，顺手一个单引号，看看效果。然后就看到了mysql的错误回显，当时我是非常震惊的。好嘛，这洞说来就来？</p><p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/9c27664132364c33b037c7aae1101512.png" alt="image-20211111194114897"></p><p>这还废啥话，直接祭出sqlmap一把嗦。结果如下，不止存在报错注入，还存在时间和布尔盲注，如下图：</p><p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/a021a7bb169ca30cae870898d2697d00.png" alt="image-20211111194544903"></p><p>还记得文章前面说的吗？这个演示站是搭建在作者自己的博客上的，这里存在sql注入，是可以把他博客打下来的。话不多说，开整。继续使用sqlmap得知，数据库中有一个库，库中存在多张表。如下图：</p><p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/f934beb6df7b75302bd145416e7c2b23.png" alt="image-20211111195322502"></p><p>根据表我们可以知道我们猜的没有错，博客确实和演示站用的同一个库。接下来就是找账号密码了。我们发现在表中是存在wp_users表的，我们想要的数据肯定也是在这张表中。我们猜的不错，确实存在。结果如下图：</p><p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/4230b1f06f143cf7be26361a4b96e83b.png" alt="image-20211111201926680"></p><p>一共两个账户，但是第二个账号的密码没有解密出来，但是我们得到了第一个账户的密码。接下来就是找后台了。其实我们通过表名前缀就可以知道这个开源博客程序WordPress。如果不清楚，我们可以借助指纹识别插件来进行识别。如下图：</p><p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/7828c29729633f968ecb18cd49ad3adc.png" alt="image-20211111200334662"></p><p>同样可以识别出来，既然已经知道了是WordPress，那么后台也就很好找了，WordPress的默认后台路径为wp-login.php，我们可以尝试一下。很幸运，作者并没有改后台路径，如下图：</p><p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/51481a20580f2ccc069b252bfd2ec6c3.png" alt="image-20211111200656776"></p><p>通过我们刚才获取到的账号密码，成功登陆后台。</p><p><img src="https://wiki-oss.s3.cn-north-1.jdcloud-oss.com/2021/11/19007a4c50825a1ad58e74db1457c1ef.png" alt="image-20211111200845443"></p><p>故事到这里就结束了。</p><h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p>在这里再次嘱咐大家，在实际环境中开发者要秉持“外部参数皆不可信原则”进行开发。</p>]]></content>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;这是一个风和日丽的下午，想着从网上找一套表白网的源码自己进行修改然后讨女友欢心。当我正在GitHub进行搜索翻阅时，一个表白墙的源码映入眼中。我好奇的点开演示网站，故事开始了。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="漏洞挖掘" scheme="https://lxflxfcl.github.io/categories/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/"/>
+    
+    
+    <category term="渗透测试" scheme="https://lxflxfcl.github.io/tags/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/"/>
+    
+  </entry>
   
   <entry>
     <title>Windows黑客编程之资源释放技术.md</title>
